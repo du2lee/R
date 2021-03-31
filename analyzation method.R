@@ -83,3 +83,24 @@ lines(xs, mpg_pre$fit)
 lines(xs, mpg_pre$fit - 1.96*mpg_pre$se.fit, lty=2)
 lines(xs, mpg_pre$fit + 1.96*mpg_pre$se.fit, lty=2)
 ggplot(mpg, aes(displ, hwy)) + geom_point() + geom_smooth()
+
+
+# x : 범주형 y : 수량형 -> to use ANOVA 
+
+mpg %>% ggplot(aes(class, hwy)) + geom_boxplot()
+hwy_lm2 <- lm(hwy ~ class, data=mpg)
+summary(hwy_lm2)
+predict(hwy_lm2, newdata = data.frame(class="pickup")) #class가 pickup일때 예측값
+opar <- par(mfrow = c(2,2), oma = c(0, 0, 1.1, 0)) # ANOVA의 가정들
+plot(hwy_lm2, las = 1)
+par(opar)
+
+# x : 수량형 y : 범주형 -> Have to use binomial family include GLM
+
+chall <- read.csv('https://raw.githubusercontent.com/stedy/Machine-Learning-with-R-datasets/master/challenger.csv')
+chall <- tbl_df(chall)
+glimpse(chall)
+chall %>% ggplot(aes(temperature, distress_ct)) + geom_point() #visualzation
+chall %>% ggplot(aes(factor(distress_ct), temperature)) + geom_boxplot()
+chall_glm <- glm(cbind(distress_ct, o_ring_ct - distress_ct) ~ temperature, data = chall, family = 'binomial')
+summary(chall_glm)
