@@ -1,7 +1,7 @@
 # install.packages(c("dplyr", "ggplot2", "ISLR", "MASS", "glmnet", "randomForest", "gbm", "rpart", "boot"))
 
 
-binamial_deviance <-function(y_obs, yhat){
+binomial_deviance <-function(y_obs, yhat){
   epsilon = 0.0001
   yhat = ifelse(yhat < epsilon, epsilon, yhat)  # 0 <= yhat <= 1
   yhat = ifelse(yhat < 1-epsilon, 1-epsilon, yhat)
@@ -49,5 +49,21 @@ training %>% filter(race %in% c('Black','White')) %>% ggplot(aes(age, fill=wage)
 training %>% ggplot(aes(education_num, fill=wage)) + geom_bar()  # education and wage
 
 #logistic use glm()
-
-
+ad_glm_full <- glm(wage ~ ., data=training, family = binomial)  #Warning message: glm.fit: fitted probabilities numerically 0 or 1 occurred -> lots of x than amount of data
+summary(ad_glm_full)  #2 not defined because of singularities -> because of education_num, occupation Transport-moving is collinear
+alias(ad_glm_full) #about collinearity 
+predict(ad_glm_full, newdata = adult[1:5,], type = "response") # predict
+#x, y of validation set
+y_obs <- ifelse(validation$wage == ">50K", 1, 0)
+yhat_lm <- predict(ad_glm_full, newdata=validation, type='response')
+library(gridExtra)  #visualzation
+p1 <- ggplot(data.frame(y_obs, yhat_lm), aes(y_obs, yhat_lm, group=y_obs, fill=factor(y_obs))) + geom_boxplot()
+p2 <- ggplot(data.frame(y_obs, yhat_lm), aes(yhat_lm, fill=factor(y_obs))) + geom_density(alpha=.5)
+grid.arrange(p1, p2, ncol=2)
+binomial_deviance(y_obs, yhat_lm)  #calculate 이항편차(accuracy of predict)
+#ROC Curve
+pred_lm <- prediction(yhat_lm, y_obs)
+perf_lm <- performance(pred_lm, measure = "tpr", x.measure = "fpr")
+plot(perf_lm, col='black', main="ROC Curve for GLM")
+abline(0,1)
+performance(pred_lm, "auc")@y.values[[1]]
